@@ -11,10 +11,10 @@ from tensorflow.keras.optimizers.legacy import SGD
 # define cnn model
 def define_model():
     """Define a simple CNN model for digit recognition.
-    
-    This model was trained on the MNIST dataset, somewhere in 2022. The 
-    model (parameters) were saved and loaded here. 
-    The stochastic gradient descent optimizer is now part of the legacy 
+
+    This model was trained on the MNIST dataset, somewhere in 2022. The
+    model (parameters) were saved and loaded here.
+    The stochastic gradient descent optimizer is now part of the legacy
     optimizers in tensorflow.keras.legacy.
 
     Returns
@@ -82,7 +82,7 @@ def predict_tickvalues(Iticks, Jticks, tickvals, model):
     JYticks : list
         A list of tick values and their predicted values.
 
-    """ 
+    """
     IXticks = []
     JYticks = []
     Itickpics = tickvals[:len(Iticks)]

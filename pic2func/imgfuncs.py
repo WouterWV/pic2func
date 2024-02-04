@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 
 """Array image manipulation.
 
-The following functions are used to extract the black, white, red, green or 
-blue channel from an rgb(a) picture. By extraction it is meant that only 
-the 'true' color content is extracted (e.g. while a white pixel carries a 
+The following functions are used to extract the black, white, red, green or
+blue channel from an rgb(a) picture. By extraction it is meant that only
+the 'true' color content is extracted (e.g. while a white pixel carries a
 255 value in the red channel, we do not wish to extract it as red).
 
 Methods defined here
@@ -38,7 +38,7 @@ plotpic(pic, colbar=False)
 """
 
 def rgb2bw(pic,threshold=255):
-    """Convert rgb(a) to bw. (NOT grayscale). 
+    """Convert rgb(a) to bw. (NOT grayscale).
 
     Parameters
     ----------
@@ -79,7 +79,7 @@ def rgb2r(pic,threshold=200):
 def rgb2g(pic,threshold=200):
     """Extract the green channel from an rgb(a) picture. It ignores white pixels
     by checking whether the average of the rgb channels is less than 250.
-    
+
     Parameters
     ----------
     pic : np.array
@@ -100,7 +100,7 @@ def rgb2g(pic,threshold=200):
 def rgb2b(pic,threshold=200):
     """Extract the blue channel from an rgb(a) picture. It ignores white pixels
     by checking whether the average of the rgb channels is less than 250.
-    
+
     Parameters
     ----------
     pic : np.array

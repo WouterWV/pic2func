@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+import os
+import subprocess
 import numpy as np
 import imageio as im
-import subprocess
 from .imgfuncs import get_xydim, xy2imframe
 
 """Functions that seek axes, tickmarks and tickvalues in pictures.
@@ -67,10 +68,10 @@ def detect_axes(pic, minlen_axis=0.1, verbose=False):
     Parameters
     ----------
     pic : np.array
-        (x,y) array with 1's and 0's. It is assumed to be the output of 
+        (x,y) array with 1's and 0's. It is assumed to be the output of
         imgfuncs.rgb2bw(original_picture).
     minlen_axis : float
-        The minimum length of the axes, in fractions of the picture size. 
+        The minimum length of the axes, in fractions of the picture size.
         Default is 0.1.
     verbose : bool
         If True, prints the intermediate results. Default is False.
@@ -124,7 +125,7 @@ def detect_axes(pic, minlen_axis=0.1, verbose=False):
     if verbose:
         print("I-axis goes through J=",Iaxis)
         print("J-axis goes through I=",Jaxis)
-    
+
     return Iaxis,Jaxis
 
 def detect_line(v, L):
@@ -144,13 +145,13 @@ def detect_line(v, L):
         (bool, int), where the bool is True if there's a line longer than L,
         and the int is the length of the longest line (0 if no line is found).
 
-    """    
+    """
     assert L <= len(v), "Can't detect line larger than the vector itself"
 
     N = len(v)
-    # Add zeros at the extrema's, for the case v starts/ends 
+    # Add zeros at the extrema's, for the case v starts/ends
     # with 1s. Then we get a correct start/stop condition at
-    # the endpoints. 
+    # the endpoints.
     v0 = np.array([0] + v.tolist()+[0]) # add zero at extrema
     diff = (v0[1:]-v0[:-1]) # -1(stop), 0 or 1(start)
     startids = np.where(diff==1)[0]
@@ -163,13 +164,13 @@ def detect_line(v, L):
     else: # len(stopids) == len(startids) due to added zeros to v
         maxL = np.max(stopids-startids)
         return  maxL >= L, maxL
-    
+
 def get_ticks(pic_g, axes):
-    """Collects the tickvalues from a picture. 
-    
-    Tickmarks are added by the user in green, on the black axes. We can 
+    """Collects the tickvalues from a picture.
+
+    Tickmarks are added by the user in green, on the black axes. We can
     easilty find them by looking for green pixels on the already detected axes.
-    
+
     Parameters
     ----------
     pic_g : np.array
@@ -183,7 +184,6 @@ def get_ticks(pic_g, axes):
     tuple
         (Iticks, Jticks), the indices of the ticks in the picture.
     """
-    NI, NJ = get_xydim(pic_g)
     Iax_Jval = axes[0]
     Jax_Ival = axes[1]
     Iaxis = np.array(([0] + (pic_g[:,Iax_Jval]).tolist() + [0]))
@@ -212,20 +212,20 @@ def get_tickmeans(v):
     stopids = np.where(diff==-1)[0]
     if len(startids) == 0:  # No 1s in v ...
         return [0],[0]
-    elif len(stopids) == 0:  # One single 1, so len is N - start_idx
+    if len(stopids) == 0:  # One single 1, so len is N - start_idx
         raise ValueError("Tickmark not closed. Add b/w pixels on the right.")
-    else:  # len(stopids) == len(startids) due to added zeros to v
-        assert len(stopids) == len(startids)              
-        ticlens = (stopids-startids)
-        ticks = []
-        for startid,ticklen in zip(startids,ticlens):
-            tick = startid + int(ticklen/2)
-            ticks.append(tick)
-        return ticks
+    # len(stopids) == len(startids) due to added zeros to v
+    assert len(stopids) == len(startids), "Unequal start and stop ids."
+    ticlens = (stopids-startids)
+    ticks = []
+    for startid,ticklen in zip(startids,ticlens):
+        tick = startid + int(ticklen/2)
+        ticks.append(tick)
+    return ticks
 
 def remove_ticks(pic, axes, Iticks, Jticks):
     """Removes the tickmarks from the green-channel picture.
-    As the actual tickvalues are also green colored, I chose to remove the 
+    As the actual tickvalues are also green colored, I chose to remove the
     tickmarks (such that they are not interpreted as numbers).
 
     Parameters
@@ -261,7 +261,7 @@ def remove_ticks(pic, axes, Iticks, Jticks):
 
 def remove_tick(pic, J, I):
     """Removes a tickmark from the green-channel picture using a floodfill.
-    
+
     Parameters
     ----------
     pic : np.array
@@ -271,7 +271,7 @@ def remove_tick(pic, J, I):
         The index of the tickmark in the J-axis.
     I : int
         The index of the tickmark in the I-axis.
-        
+
     Returns
     -------
     np.array
@@ -303,10 +303,10 @@ def remove_tick(pic, J, I):
         iteration += 1
     return pic,tick_ids
 
-def get_tickvals(pic, tick_pickids, proximity=0.05):
+def get_tickvals(pic, tick_pickids, proximity=0.05, verbose=False):
     """
-    Returns a list of 28x28 images of the numbers (tickvals). Each listelement 
-    is a list, containing the group of ordered digits of that tickvalue. 
+    Returns a list of 28x28 images of the numbers (tickvals). Each listelement
+    is a list, containing the group of ordered digits of that tickvalue.
     The first element of this listelement list is the tickvalue itself,
     followed by the actual digits.
 
@@ -333,17 +333,17 @@ def get_tickvals(pic, tick_pickids, proximity=0.05):
     groups = group_ticks(tick_pickids,numbers_picids)
     numbers = get_numbers_from_groups(groups)
     squared_numbers = reshape_numbers(numbers)
-    scaled_nrs = scale_numbers(squared_numbers,28)
+    scaled_nrs = scale_numbers(squared_numbers, 28, verbose=verbose)
     return scaled_nrs
 
-def scale_numbers(numbers, a=28):
-    """Scales the list of number arrays to an axa black and white array, which 
+def scale_numbers(numbers, a=28, verbose=False):
+    """Scales the list of number arrays to an axa black and white array, which
     is saved to a jpg file. The jpg file serves as input for the classifier.
-    
+
     Parameters
     ----------
     numbers : list
-        The list of number arrays. A number array is literally an array that 
+        The list of number arrays. A number array is literally an array that
         contains the pixels that form a number.
     a : int
         The length of the side of the square. Default is 28.
@@ -366,10 +366,13 @@ def scale_numbers(numbers, a=28):
             exe.communicate()
             scaled_digit = im.imread(on)/255
             scaled_digits.append(scaled_digit)
+            if not verbose:
+                os.remove(fn)
+                os.remove(on)
         scaled_numbers.append(scaled_digits)
 
     return scaled_numbers
-    
+
 def get_numbers_from_groups(groups):
     """Returns the numbers from the groups of digits."""
     numbers = []
@@ -386,9 +389,9 @@ def get_numbers_from_groups(groups):
     return sorted_nrs
 
 def reshape_numbers(numbers):
-    """Reshapes the list of number arrays, by turning each number array into 
+    """Reshapes the list of number arrays, by turning each number array into
     a square one (which will later be resized to 28x28 pixels).
-    
+
     """
     # first make square
     shaped_numbers = []
@@ -400,7 +403,7 @@ def reshape_numbers(numbers):
         shaped_numbers.append(shaped_digits)
 
     return shaped_numbers
-        
+
 def make_square(digit):
     """Turns a number array into a square one."""
     digit = np.array(digit)
@@ -423,12 +426,12 @@ def make_square(digit):
             digit_array[i+shift,j+shift] = 1
 
     return digit_array
-        
+
 
 def sort_digits_in_numbers(numbers):
     """Sorts the digits in the numbers, such that the first digit is the one
     with the lowest I-value.
-    
+
     """
     #numbers: Ngroups, each list element has Ndigits elements
     sorted_numbers = []
@@ -444,7 +447,7 @@ def sort_digits_in_numbers(numbers):
     return sorted_numbers
 
 def grow_and_remove_number(pic, startone):
-    """Grows a number (using a floodfill) from a starting point, and then 
+    """Grows a number (using a floodfill) from a starting point, and then
     removes it from the picture.
 
     Parameters
@@ -518,7 +521,7 @@ def group_ticks(ticks,digits):
         min_id = np.argmin(dists)
         groups[i].append(digits.pop(min_id))
         assignments += 1
-    # And now we search the closest group for each digit. 
+    # And now we search the closest group for each digit.
     # Let me assume we don't get weird cases here...
     while assignments < Ndigits:
         for i,digit in enumerate(digits):
@@ -526,7 +529,7 @@ def group_ticks(ticks,digits):
             for j,group in enumerate(groups):
                 mindist_group_to_el = None
                 for groupel in group:
-                    if mindist_group_to_el == None:
+                    if mindist_group_to_el is None:
                         mindist_group_to_el = obj_edge_dist(groupel, digit)
                     else:
                         mintest = obj_edge_dist(groupel,digit)
@@ -540,7 +543,7 @@ def group_ticks(ticks,digits):
 
 def get_IJcurve(piccurve):
     """Returns the indices of the 1's in the piccurve.
-    
+
     Parameters
     ----------
     piccurve : np.array
@@ -550,7 +553,7 @@ def get_IJcurve(piccurve):
     Returns
     -------
     np.array
-        The indices of the 1's in the piccurve.    
+        The indices of the 1's in the piccurve.
     """
     NI,NJ = get_xydim(piccurve)
     IJpoints = []
@@ -559,7 +562,7 @@ def get_IJcurve(piccurve):
             if piccurve[I,J] == 1:
                 IJpoints.append(np.array([I,J]))
     return np.array(IJpoints)
-        
+
 def obj_edge_dist(A,B):
     """Returns the closest distance between A_i and B_j elements."""
     return np.min(np.array([[(a[0] - b[0])**2 + (a[1] - b[1])**2 for a in A]\

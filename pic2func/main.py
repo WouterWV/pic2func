@@ -7,7 +7,7 @@ from .detect import (get_IJcurve, detect_axes, get_ticks, remove_ticks,
                      get_tickvals)
 from .function import get_XYfunc, dft
 
-"""Main module. 
+"""Main module.
 
 Functions to get an (x,y) function from a picture.
 
@@ -49,7 +49,7 @@ def function_from_picture(picpath, verbose=False):
     axes = detect_axes(picbw, verbose=verbose)
     Iticks, Jticks = get_ticks(picticks, axes)
     picnr, tick_picids = remove_ticks(picticks, axes, Iticks, Jticks)
-    tickvals = get_tickvals(picnr, tick_picids, proximity=0.01)
+    tickvals = get_tickvals(picnr, tick_picids, proximity=0.01, verbose=False)
     IXticks, JYticks = predict_tickvalues(Iticks, Jticks, tickvals, digitmodel)
     f = get_XYfunc(curveIJ, IXticks, JYticks, axes)  # Nx2 array: (x,y) points
     return f
@@ -75,7 +75,7 @@ def fourier_function_from_picture(picpath, n=10, verbose=False):
 
     """
     weightspath = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               "cnn/weights")
+                               "cnn/weights.index")
     digitmodel = define_model()
     digitmodel.load_weights(weightspath)
     picpng = im.imread(picpath)
@@ -89,5 +89,5 @@ def fourier_function_from_picture(picpath, n=10, verbose=False):
     tickvals = get_tickvals(picnr, tick_picids, proximity=0.01)
     IXticks, JYticks = predict_tickvalues(Iticks, Jticks, tickvals, digitmodel)
     f = get_XYfunc(curveIJ,IXticks,JYticks,axes)  # Nx2 array: (x,y) points
-    dft_f = dft(f[:,1],n) 
+    dft_f = dft(f[:,1],n)
     return f, dft_f
