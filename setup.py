@@ -23,5 +23,8 @@ setup(
     license='MIT',
     packages=find_packages(),
     install_requires=get_requirements(),
+    package_data={
+        'pic2func': ['cnn/weights*'],
+    },
     python_requires='>=3.10',
 )

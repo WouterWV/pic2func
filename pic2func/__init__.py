@@ -23,5 +23,11 @@ main.py
 
 predict.py
     CNN model to predict the digits given at tickvalues.
+
+DATA
+~~~~
+cnn
+    Folder with the CNN tensorflow model weights.
+
 """
 from .main import function_from_picture, fourier_function_from_picture
