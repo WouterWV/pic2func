@@ -2,3 +2,4 @@ build
 *.jpg
 *.tiff
 pic2func.egg-info/
+dist

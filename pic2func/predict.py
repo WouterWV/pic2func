@@ -1,12 +1,27 @@
 # -*- coding: utf-8 -*-
+"""Module containing the predefined CNN and its digit prediction functions.
+
+Methods defined here
+--------------------
+define_model()
+    Load the predefined CNN model for digit recognition.
+
+predict_digit(digit, model)
+    Predict a digit from a 28x28 picture.
+
+predict_tickvalues(iticks, jticks, tickvals, model)
+    Predict the tickvalues from the tickpics.
+
+"""
 import numpy as np
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D
-from tensorflow.keras.layers import MaxPooling2D
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import Flatten
+from tensorflow import keras
+from keras.models import Sequential
+from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
+from keras.layers import Dense
+from keras.layers import Flatten
 # add .legacy if you use tensorflow>XX
-from tensorflow.keras.optimizers.legacy import SGD
+from keras.optimizers.legacy import SGD
 
 # define cnn model
 def define_model():
@@ -61,14 +76,14 @@ def predict_digit(digit, model):
     pred = model.predict(digit)
     return np.argmax(pred[0])  # 0-9
 
-def predict_tickvalues(Iticks, Jticks, tickvals, model):
+def predict_tickvalues(iticks, jticks, tickvals, model):
     """Predict the tickvalues from the tickpics.
 
     Parameters
     ----------
-    Iticks : list
+    iticks : list
         A list of tick values.
-    Jticks : list
+    jticks : list
         A list of tick values.
     tickvals : list
         A list of tickpics.
@@ -77,25 +92,25 @@ def predict_tickvalues(Iticks, Jticks, tickvals, model):
 
     Returns
     -------
-    IXticks : list
+    ixticks : list
         A list of tick values and their predicted values.
-    JYticks : list
+    jyticks : list
         A list of tick values and their predicted values.
 
     """
-    IXticks = []
-    JYticks = []
-    Itickpics = tickvals[:len(Iticks)]
-    Jtickpics = tickvals[len(Iticks):]
-    for tick, tickpics in zip(Iticks,Itickpics):
+    ixticks = []
+    jyticks = []
+    itickpics = tickvals[:len(iticks)]
+    jtickpics = tickvals[len(iticks):]
+    for tick, tickpics in zip(iticks,itickpics):
         val = ""
         for tickpic in tickpics:
             val = val+str(predict_digit(tickpic, model))
-        IXticks.append([tick,int(val)])
-    for tick, tickpics in zip(Jticks,Jtickpics):
+        ixticks.append([tick,int(val)])
+    for tick, tickpics in zip(jticks,jtickpics):
         val = ""
         for tickpic in tickpics:
             val = val+str(predict_digit(tickpic, model))
-        JYticks.append([tick,int(val)])
+        jyticks.append([tick,int(val)])
 
-    return IXticks, JYticks
+    return ixticks, jyticks

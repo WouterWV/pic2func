@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-import numpy as np
-import matplotlib.pyplot as plt
-
 """Array image manipulation.
 
 The following functions are used to extract the black, white, red, green or
@@ -36,6 +33,8 @@ plotpic(pic, colbar=False)
     Plot a picture. If colbar is True, a colorbar is added.
 
 """
+import numpy as np
+import matplotlib.pyplot as plt
 
 def rgb2bw(pic,threshold=255):
     """Convert rgb(a) to bw. (NOT grayscale).
@@ -123,7 +122,7 @@ def get_xydim(pic):
 
 def im2xyframe(pic):
     """Transpose then flip along the second axis."""
-    return (np.flip(pic.T,axis=1))
+    return np.flip(pic.T,axis=1)
 
 def xy2imframe(pic):
     """Flip along the second axis then transpose."""
@@ -132,7 +131,7 @@ def xy2imframe(pic):
 def plotpic(pic, colbar=False):
     """Plot a picture."""
     fig,ax=plt.subplots()
-    ax.imshow(pic)
+    f = ax.imshow(pic)
     if colbar:
         plt.colorbar(f)
     fig.show()

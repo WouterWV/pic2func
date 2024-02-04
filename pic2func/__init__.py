@@ -13,7 +13,7 @@ detect.py
     Detect axes, function, tickmarks and tickvalues from an image array.
 
 function.py
-    Methods to transform IJ pixel coordinates to desired xy coordinates.
+    Methods to transform ij pixel coordinates to desired xy coordinates.
 
 imgfuncs.py
     Methods to extract color channels and other data from an image array.

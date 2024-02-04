@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
-import subprocess
-import numpy as np
-import imageio as im
-from .imgfuncs import get_xydim, xy2imframe
-
 """Functions that seek axes, tickmarks and tickvalues in pictures.
 
 Methods defined here
@@ -21,7 +15,7 @@ get_ticks(pic_g, axes)
 get_tickmeans(v)
     Get the indices of the tickmarks in a vector v.
 
-remove_ticks(pic, axes, Iticks, Jticks)
+remove_ticks(pic, axes, iticks, jticks)
     Removes the tickmarks from the green-channel picture.
 
 remove_tick(pic, J, I)
@@ -49,13 +43,18 @@ group_ticks(ticks,digits)
     Groups the ticks and digits together, such that each tick has its
     corresponding digits.
 
-get_IJcurve(piccurve)
+get_ijcurve(piccurve)
     Returns the indices of the 1's in the piccurve.
 
 obj_edge_dist(A,B)
     Returns the closest distance between x_i and y_j elements.
-"""
 
+"""
+import os
+import subprocess
+import numpy as np
+import imageio as im
+from .imgfuncs import get_xydim, xy2imframe
 
 def detect_axes(pic, minlen_axis=0.1, verbose=False):
     """Seek for the x and y axes in a picture.
@@ -79,54 +78,54 @@ def detect_axes(pic, minlen_axis=0.1, verbose=False):
     Returns
     -------
     tuple
-        (Iaxis,Jaxis), the indices of the axes in the picture.
+        (iaxis,jaxis), the indices of the axes in the picture.
 
     """
-    NI,NJ = get_xydim(pic)
-    minI = int(minlen_axis*NI)
-    minJ = int(minlen_axis*NJ)
+    ni,nj = get_xydim(pic)
+    mini = int(minlen_axis*ni)
+    minj = int(minlen_axis*nj)
 
     # Initiate axes through origin (bottom left)
-    Iaxis = NI
-    Jaxis = 0
+    iaxis = ni
+    jaxis = 0
 
     if verbose:
-        print("NI:",NI)
-        print("NJ:",NJ)
-        print("minI:",minI)
-        print("minJ:",minJ)
+        print("ni:",ni)
+        print("nj:",nj)
+        print("mini:",mini)
+        print("minj:",minj)
 
     # Detection
-    possJaxes, possIaxes = [], []
-    possJlens, possIlens = [], []
+    possjaxes, possiaxes = [], []
+    possjlens, possilens = [], []
 
-    for i in range(NI):
-        detect, maxL = detect_line(pic[i,:],minJ)
+    for i in range(ni):
+        detect, maxl = detect_line(pic[i,:],minj)
         if detect:
-            possJaxes.append(i)
-            possJlens.append(maxL)
-    for j in range(NJ):
-        detect, maxL = detect_line(pic[:,j],minI)
+            possjaxes.append(i)
+            possjlens.append(maxl)
+    for j in range(nj):
+        detect, maxl = detect_line(pic[:,j],mini)
         if detect:
-            possIaxes.append(j)
-            possIlens.append(maxL)
+            possiaxes.append(j)
+            possilens.append(maxl)
 
     if verbose:
-        print("possIaxes:",possIaxes)
-        print("possJaxes:",possJaxes)
-    if possIaxes:  # If possitibilites for J axis are found
-        longest_Iaxis_index = np.argmax(possIlens)
-        Iaxis = possIaxes[longest_Iaxis_index]
-        # Iaxis = max(set(possIaxes), key=possIaxes.count)
-    if possJaxes:  # If possitibilites for J axis are found
-        longest_Jaxis_index = np.argmax(possJlens)
-        Jaxis = possJaxes[longest_Jaxis_index]
-        # Jaxis = max(set(possJaxes), key=possJaxes.count)
+        print("possiaxes:",possiaxes)
+        print("possjaxes:",possjaxes)
+    if possiaxes:  # If possitibilites for J axis are found
+        longest_iaxis_index = np.argmax(possilens)
+        iaxis = possiaxes[longest_iaxis_index]
+        # iaxis = max(set(possiaxes), key=possiaxes.count)
+    if possjaxes:  # If possitibilites for J axis are found
+        longest_jaxis_index = np.argmax(possjlens)
+        jaxis = possjaxes[longest_jaxis_index]
+        # jaxis = max(set(possjaxes), key=possjaxes.count)
     if verbose:
-        print("I-axis goes through J=",Iaxis)
-        print("J-axis goes through I=",Jaxis)
+        print("I-axis goes through J=",iaxis)
+        print("J-axis goes through I=",jaxis)
 
-    return Iaxis,Jaxis
+    return iaxis,jaxis
 
 def detect_line(v, L):
     """
@@ -153,17 +152,17 @@ def detect_line(v, L):
     # with 1s. Then we get a correct start/stop condition at
     # the endpoints.
     v0 = np.array([0] + v.tolist()+[0]) # add zero at extrema
-    diff = (v0[1:]-v0[:-1]) # -1(stop), 0 or 1(start)
+    diff = v0[1:]-v0[:-1] # -1(stop), 0 or 1(start)
     startids = np.where(diff==1)[0]
     stopids = np.where(diff==-1)[0]
     if len(startids) == 0: # No 1s in v ...
         return False, 0
-    elif len(stopids) == 0: # One single 1, so len is N - start_idx
-        maxL = N - startids[0] # This scenario is impossible due to addboed 0s
-        return maxL >= L, maxL
-    else: # len(stopids) == len(startids) due to added zeros to v
-        maxL = np.max(stopids-startids)
-        return  maxL >= L, maxL
+    if len(stopids) == 0: # One single 1, so len is N - start_idx
+        maxl = N - startids[0] # This scenario is impossible due to addboed 0s
+        return maxl >= L, maxl
+    # len(stopids) == len(startids) due to added zeros to v
+    maxl = np.max(stopids-startids)
+    return  maxl >= L, maxl
 
 def get_ticks(pic_g, axes):
     """Collects the tickvalues from a picture.
@@ -177,20 +176,20 @@ def get_ticks(pic_g, axes):
         (x,y,3) array with 1's and 0's. It is assumed to be the output of
         imgfuncs.rgb2g(original_picture).
     axes : tuple
-        (Iaxis,Jaxis), the indices of the axes in the picture.
+        (iaxis,jaxis), the indices of the axes in the picture.
 
     Returns
     -------
     tuple
-        (Iticks, Jticks), the indices of the ticks in the picture.
+        (iticks, jticks), the indices of the ticks in the picture.
     """
-    Iax_Jval = axes[0]
-    Jax_Ival = axes[1]
-    Iaxis = np.array(([0] + (pic_g[:,Iax_Jval]).tolist() + [0]))
-    Jaxis = np.array(([0] + (pic_g[Jax_Ival,:]).tolist() + [0]))
-    Iticks = get_tickmeans(Iaxis)
-    Jticks = get_tickmeans(Jaxis)
-    return Iticks, Jticks
+    iax_jval = axes[0]
+    jax_ival = axes[1]
+    iaxis = np.array(([0] + (pic_g[:,iax_jval]).tolist() + [0]))
+    jaxis = np.array(([0] + (pic_g[jax_ival,:]).tolist() + [0]))
+    iticks = get_tickmeans(iaxis)
+    jticks = get_tickmeans(jaxis)
+    return iticks, jticks
 
 def get_tickmeans(v):
     """Get the indices of the tickmarks in a vector v.
@@ -207,7 +206,7 @@ def get_tickmeans(v):
     list
         The indices of the tickmarks in the vector.
     """
-    diff = (v[1:]-v[:-1])  # -1(stop), 0 or 1(start)
+    diff = v[1:]-v[:-1]  # -1(stop), 0 or 1(start)
     startids = np.where(diff==1)[0]
     stopids = np.where(diff==-1)[0]
     if len(startids) == 0:  # No 1s in v ...
@@ -216,14 +215,14 @@ def get_tickmeans(v):
         raise ValueError("Tickmark not closed. Add b/w pixels on the right.")
     # len(stopids) == len(startids) due to added zeros to v
     assert len(stopids) == len(startids), "Unequal start and stop ids."
-    ticlens = (stopids-startids)
+    ticlens = stopids-startids
     ticks = []
     for startid,ticklen in zip(startids,ticlens):
         tick = startid + int(ticklen/2)
         ticks.append(tick)
     return ticks
 
-def remove_ticks(pic, axes, Iticks, Jticks):
+def remove_ticks(pic, axes, iticks, jticks):
     """Removes the tickmarks from the green-channel picture.
     As the actual tickvalues are also green colored, I chose to remove the
     tickmarks (such that they are not interpreted as numbers).
@@ -234,10 +233,10 @@ def remove_ticks(pic, axes, Iticks, Jticks):
         (x,y,3) array with 1's and 0's. It is assumed to be the output of
         imgfuncs.rgb2g(original_picture).
     axes : tuple
-        (Iaxis,Jaxis), the indices of the axes in the picture.
-    Iticks : list
+        (iaxis,jaxis), the indices of the axes in the picture.
+    iticks : list
         The indices of the tickmarks in the I-axis.
-    Jticks : list
+    jticks : list
         The indices of the tickmarks in the J-axis.
 
     Returns
@@ -248,14 +247,14 @@ def remove_ticks(pic, axes, Iticks, Jticks):
     list
         The indices of the removed tickmarks.
     """
-    Iax_Jval = axes[0]
-    Jax_Ival = axes[1]
+    iax_jval = axes[0]
+    jax_ival = axes[1]
     tick_ids = []
-    for Itick in Iticks:
-        pic,tick_id = remove_tick(pic, Iax_Jval, Itick)
+    for itick in iticks:
+        pic,tick_id = remove_tick(pic, iax_jval, itick)
         tick_ids.append(tick_id)
-    for Jtick in Jticks:
-        pic,tick_id = remove_tick(pic, Jtick, Jax_Ival)
+    for jtick in jticks:
+        pic,tick_id = remove_tick(pic, jtick, jax_ival)
         tick_ids.append(tick_id)
     return pic,tick_ids
 
@@ -324,7 +323,7 @@ def get_tickvals(pic, tick_pickids, proximity=0.05, verbose=False):
     """
     numbers_picids = []
     ones_left = np.where(pic==1)
-    while(len(ones_left[0]) > 0):
+    while len(ones_left[0]) > 0:
         startone = [ones_left[0][0], ones_left[1][0]]
         pic, number = grow_and_remove_number(pic, startone)
         ones_left = np.where(pic == 1)
@@ -355,16 +354,16 @@ def scale_numbers(numbers, a=28, verbose=False):
 
     """
     scaled_numbers = []
-    for n,number in enumerate(numbers):
+    for n, number in enumerate(numbers):
         scaled_digits = []
-        for d,digit in enumerate(number):
-            fn = ""+str(n)+"_"+str(d)+"_digit.tiff"
-            on = "scaled_"+str(n)+"_"+str(d)+"_digit.jpg"
+        for d, digit in enumerate(number):
+            fn = "" + str(n) + "_" + str(d) + "_digit.tiff"
+            on = "scaled_" + str(n) + "_" + str(d) + "_digit.jpg"
             im.imwrite(fn, xy2imframe(digit))
-            cmd = ['convert',fn, '-resize', str(a),'-quality', '100', on]
-            exe = subprocess.Popen(cmd, stdin = subprocess.PIPE,shell=False)
+            cmd = ['convert', fn, '-resize', str(a), '-quality', '100', on]
+            exe = subprocess.Popen(cmd, stdin = subprocess.PIPE, shell=False)
             exe.communicate()
-            scaled_digit = im.imread(on)/255
+            scaled_digit = im.imread(on) / 255
             scaled_digits.append(scaled_digit)
             if not verbose:
                 os.remove(fn)
@@ -407,16 +406,16 @@ def reshape_numbers(numbers):
 def make_square(digit):
     """Turns a number array into a square one."""
     digit = np.array(digit)
-    I_min = np.min(digit[:,0])
-    J_min = np.min(digit[:,1])
-    digit[:,0] = digit[:,0]-I_min
-    digit[:,1] = digit[:,1]-J_min
-    I_max = np.max(digit[:,0])
-    J_max = np.max(digit[:,1])
-    N_max = np.max([I_max+1,J_max+1])
-    shift = int(N_max/8)
-    delta = int((J_max - I_max)/2)
-    digit_array = np.zeros([N_max+shift*2,N_max+shift*2])
+    i_min = np.min(digit[:,0])
+    j_min = np.min(digit[:,1])
+    digit[:,0] = digit[:,0]-i_min
+    digit[:,1] = digit[:,1]-j_min
+    i_max = np.max(digit[:,0])
+    j_max = np.max(digit[:,1])
+    n_max = np.max([i_max+1,j_max+1])
+    shift = int(n_max/8)
+    delta = int((j_max - i_max)/2)
+    digit_array = np.zeros([n_max+shift*2,n_max+shift*2])
     for i,j in zip(digit[:,0],digit[:,1]):
         if delta > 0:
             digit_array[i+shift+delta,j+shift] = 1
@@ -433,14 +432,14 @@ def sort_digits_in_numbers(numbers):
     with the lowest I-value.
 
     """
-    #numbers: Ngroups, each list element has Ndigits elements
+    #numbers: Ngroups, each list element has ndigits elements
     sorted_numbers = []
     for number in numbers:
-        least_I_vals = []
+        least_i_vals = []
         for digit in number:
-            least_I_vals.append(np.min(digit[:,0]))
-        least_I_vals, number = zip(*sorted(zip(least_I_vals, number)))
-        least_I_vals, number = (list(t) for t in zip(*sorted(zip(least_I_vals,
+            least_i_vals.append(np.min(digit[:,0]))
+        least_i_vals, number = zip(*sorted(zip(least_i_vals, number)))
+        least_i_vals, number = (list(t) for t in zip(*sorted(zip(least_i_vals,
                                                                  number))))
         sorted_numbers.append(number)
 
@@ -477,8 +476,7 @@ def grow_and_remove_number(pic, startone):
             tick_ids.append(one)
         new_ones = []
         for one in ones:
-            i = one[0]
-            j = one[1]
+            i,j = one[0], one[1]
             testids = [[i+1,j+1], [i+1,j], [i+1,j-1], [i,j+1], [i,j-1],
                        [i-1,j+1], [i-1,j], [i-1,j-1]]
             for tid in testids:
@@ -508,32 +506,32 @@ def group_ticks(ticks,digits):
         The groups of ticks and digits.
 
     """
-    Ndigits = len(digits)
-    # We need Ndigits assignments, and Nticks groups
+    ndigits = len(digits)
+    # We need ndigits assignments, and Nticks groups
     assignments = 0
     # First element of each group is the tick, then digits
     groups = [[el] for el in ticks]
     # First we assign one digit to each tickmark, i.e. the closest one
     for i,tick in enumerate(ticks):
         dists = []
-        for j,digit in enumerate(digits):
+        for digit in digits:
             dists.append(obj_edge_dist(tick, digit))
         min_id = np.argmin(dists)
         groups[i].append(digits.pop(min_id))
         assignments += 1
     # And now we search the closest group for each digit.
     # Let me assume we don't get weird cases here...
-    while assignments < Ndigits:
-        for i,digit in enumerate(digits):
+    while assignments < ndigits:
+        for i, digit in enumerate(digits):
             dists = []
-            for j,group in enumerate(groups):
+            for group in groups:
                 mindist_group_to_el = None
                 for groupel in group:
                     if mindist_group_to_el is None:
                         mindist_group_to_el = obj_edge_dist(groupel, digit)
                     else:
-                        mintest = obj_edge_dist(groupel,digit)
-                        if mintest<mindist_group_to_el:
+                        mintest = obj_edge_dist(groupel, digit)
+                        if mintest < mindist_group_to_el:
                             mindist_group_to_el = mintest
                 dists.append(mindist_group_to_el)
             min_id = np.argmin(dists)
@@ -541,7 +539,7 @@ def group_ticks(ticks,digits):
             assignments += 1
     return groups
 
-def get_IJcurve(piccurve):
+def get_ijcurve(piccurve):
     """Returns the indices of the 1's in the piccurve.
 
     Parameters
@@ -555,15 +553,15 @@ def get_IJcurve(piccurve):
     np.array
         The indices of the 1's in the piccurve.
     """
-    NI,NJ = get_xydim(piccurve)
-    IJpoints = []
-    for I in range(NI):
-        for J in range(NJ):
-            if piccurve[I,J] == 1:
-                IJpoints.append(np.array([I,J]))
-    return np.array(IJpoints)
+    ni,nj = get_xydim(piccurve)
+    ijpoints = []
+    for i in range(ni):
+        for j in range(nj):
+            if piccurve[i,j] == 1:
+                ijpoints.append(np.array([i,j]))
+    return np.array(ijpoints)
 
-def obj_edge_dist(A,B):
-    """Returns the closest distance between A_i and B_j elements."""
-    return np.min(np.array([[(a[0] - b[0])**2 + (a[1] - b[1])**2 for a in A]\
-                            for b in B]))
+def obj_edge_dist(aa, bb):
+    """Returns the closest distance between aa_i and bb_j elements."""
+    return np.min(np.array([[(a[0] - b[0])**2 + (a[1] - b[1])**2 for a in aa]\
+                            for b in bb]))
